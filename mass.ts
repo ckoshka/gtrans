@@ -15,10 +15,6 @@ import {
 	TranslateEffect,
 	WriteStdoutEffect,
 } from "./effects.ts";
-import {readLines} from "https://deno.land/std/io/buffer.ts";
-import * as mod from "https://deno.land/std@0.158.0/streams/mod.ts";
-import { translate } from "./after.ts";
-
 
 export const chunkStdin = use<ReadLineEffect & BatchTranslateConfigEffect>()
 	.map2(async function* (fx) {
@@ -31,7 +27,9 @@ export const chunkStdin = use<ReadLineEffect & BatchTranslateConfigEffect>()
 			try {
 				chunk += await fx.readLine();
 				chunk += "\n";
-			} catch {
+			} catch(e) {
+				console.error(e);
+				yield chunk;
 				break;
 			}
 		}
@@ -40,46 +38,32 @@ export const chunkStdin = use<ReadLineEffect & BatchTranslateConfigEffect>()
 export const batchTranslate = chunkStdin.chain((chunks) =>
 	use<TranslateEffect & BatchTranslateConfigEffect>()
 		.map2(async function* (fx) {
-			const guard = (() => {
-				const promises: Promise<string>[] = [];
-				let waitOn = (_: number) => {};
-				return {
-					push: async (promise: Promise<string>) => {
-						if (promises.length >= fx.concurrency) {
-							await promises[0];
-						}
-						promises.push(promise);
-						waitOn(0);
-					},
-					pull: async () => {
-						if (promises.length === 0) {
-							await new Promise((resolve) => {
-								waitOn = resolve;
-							});
-						}
-						return promises.shift();
-					},
-				};
-			})();
+			const promises: Promise<string>[] = [];
 
 			let shouldBreak = false;
 
+			const sleep = () => new Promise((resolve) =>
+				setTimeout(resolve, fx.pauseMs)
+			);
+
 			(async () => {
 				for await (const chunk of chunks) {
-					await guard.push(Promise.resolve(fx.translate(chunk)));
+					await sleep();
+					promises.push(Promise.resolve(fx.translate(chunk)));
 				}
 				shouldBreak = true;
 			})();
 
 			for (;;) {
-				if (shouldBreak) {
-					break;
-				}
-				const prom = await guard.pull();
+				const prom = promises.shift();
 				if (prom === undefined) {
+					await sleep();
 					continue;
 				}
-				yield prom;
+				yield await prom;
+				if (shouldBreak && promises.length === 0) {
+					break;
+				}
 			}
 		})
 );
@@ -93,21 +77,4 @@ export const translateAndLog = batchTranslate.chain((txs) =>
 		})
 );
 
-const lineReader = readLines(mod.readerFromStreamReader(Deno.stdin.readable.getReader()));
-
-translateAndLog.run({
-    concurrency: 4,
-    maxLen: 4800,
-    readLine: async () => {
-        const line = await lineReader.next();
-        if (line.done === true) {
-            throw new Error();
-        }
-        return line.value;
-    },
-    translate: s => translate({
-        text: s,
-        targetLang: "fr",
-    }).then(arr => arr.map(a => a.translation).join("\n")),
-    writeToStdout: console.log
-})
+// to make this usable: retain the original (easy), make it accept command-line flags

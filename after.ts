@@ -70,14 +70,18 @@ const fillDefaults = (
 	...cfg,
 });
 
-export const translate = (cfg: GoogleTranslateConfig) =>
+export const translate = (cfg: GoogleTranslateConfig): Promise<ReturnType<typeof procTranslations>> =>
 	R.pipe(
 		fillDefaults,
 		createBody,
 		(body) => [buildUrl(cfg).toString(), body] as const,
 		(params) => fetch(...params),
 		(r) => r.then((resp) => resp.json()),
-		(r) => r.then((json) => procTranslations(json.sentences)),
+		(r) => r.then((json) => procTranslations(json.sentences)).catch(async e => {
+			console.error(e);
+			await new Promise(resolve => setTimeout(resolve, 500 + 500 * Math.random()));
+			return await translate(cfg);
+		}),
 	)(cfg);
 
 /*translate({

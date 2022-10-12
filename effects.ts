@@ -14,5 +14,5 @@ export type TranslateEffect = {
 
 export type BatchTranslateConfigEffect = {
     maxLen: number;
-    concurrency: number;
+    pauseMs: number;
 }
