@@ -8,6 +8,8 @@
 // - 6. we batch together the lines that need to be retried according to 1
 // - 7. loop until all pigeon-holes are marked as flushed
 
+// only happens when it's non-latin, especially far up the unicode range, implying that it has something to do with maximum length in terms of bytes.
+
 import { use } from "./deps.ts";
 import {
 	BatchTranslateConfigEffect,
@@ -18,9 +20,10 @@ import {
 
 export const chunkStdin = use<ReadLineEffect & BatchTranslateConfigEffect>()
 	.map2(async function* (fx) {
+		const enc = new TextEncoder();
 		let chunk = "";
 		for (;;) {
-			if (chunk.length >= fx.maxLen) {
+			if (enc.encode(chunk).length >= fx.maxLen) {
 				yield chunk; // will include the new line
 				chunk = "";
 			}

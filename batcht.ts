@@ -1,12 +1,11 @@
 #!/usr/bin/env -S deno run -A
 
-import { readLines } from "https://deno.land/std/io/buffer.ts";
+import { readLines } from "https://deno.land/std@0.147.0/io/buffer.ts";
 import { readerFromStreamReader } from "https://deno.land/std@0.158.0/streams/mod.ts";
 import { translate } from "./after.ts";
 import { translateAndLog } from "./mass.ts";
 import {
 	Command,
-	EnumType,
 } from "https://deno.land/x/cliffy@v0.25.2/command/mod.ts";
 
 await new Command()
@@ -31,7 +30,7 @@ await new Command()
     );
 
 		const defaults = translateAndLog.implF(() => ({
-			maxLen: 4000,
+			maxLen: 2500, // needs to be kept here bcs unicode codepoints are counted differently by google, leading to errors for some languages
 			readLine: async () => {
 				const line = await lineReader.next();
 				if (line.done === true) {
