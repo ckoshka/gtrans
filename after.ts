@@ -1,11 +1,10 @@
 import { GoogleTranslateConfig, GoogleTranslateConfigFull } from "./types.ts";
 import { Maybe, R } from "./deps.ts";
 
-const addParams = (url: URL) =>
-	(params: [string, string][]) => {
-		params.forEach((k) => url.searchParams.append(k[0], k[1]));
-		return url;
-	};
+const addParams = (url: URL) => (params: [string, string][]) => {
+	params.forEach((k) => url.searchParams.append(k[0], k[1]));
+	return url;
+};
 
 const createBaseUrl = () =>
 	new URL("https://translate.google.com/translate_a/single");
@@ -70,18 +69,25 @@ const fillDefaults = (
 	...cfg,
 });
 
-export const translate = (cfg: GoogleTranslateConfig): Promise<ReturnType<typeof procTranslations>> =>
+export const translate = (
+	cfg: GoogleTranslateConfig,
+): Promise<ReturnType<typeof procTranslations>> =>
 	R.pipe(
 		fillDefaults,
 		createBody,
 		(body) => [buildUrl(cfg).toString(), body] as const,
 		(params) => fetch(...params),
 		(r) => r.then((resp) => resp.json()),
-		(r) => r.then((json) => procTranslations(json.sentences)).catch(async e => {
-			console.error(e);
-			await new Promise(resolve => setTimeout(resolve, 500 + 500 * Math.random()));
-			return await translate(cfg);
-		}),
+		(r) =>
+			r.then((json) => procTranslations(json.sentences)).catch(
+				async (e) => {
+					console.error(e);
+					await new Promise((resolve) =>
+						setTimeout(resolve, 500 + 500 * Math.random())
+					);
+					return await translate(cfg);
+				},
+			),
 	)(cfg);
 
 /*translate({

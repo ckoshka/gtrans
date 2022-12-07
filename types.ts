@@ -1,4 +1,12 @@
-export type Param<T, V extends { subtype?: string, default?: T, required?: true, constraint?: string}> = T;
+export type Param<
+	T,
+	V extends {
+		subtype?: string;
+		default?: T;
+		required?: true;
+		constraint?: string;
+	},
+> = T;
 //...so you *can* have named type parameters
 
 export type GoogleTranslateConfigFull = {

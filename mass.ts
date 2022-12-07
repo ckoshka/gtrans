@@ -30,7 +30,7 @@ export const chunkStdin = use<ReadLineEffect & BatchTranslateConfigEffect>()
 			try {
 				chunk += await fx.readLine();
 				chunk += "\n";
-			} catch(e) {
+			} catch (e) {
 				console.error(e);
 				yield chunk;
 				break;
@@ -45,9 +45,8 @@ export const batchTranslate = chunkStdin.chain((chunks) =>
 
 			let shouldBreak = false;
 
-			const sleep = () => new Promise((resolve) =>
-				setTimeout(resolve, fx.pauseMs)
-			);
+			const sleep = () =>
+				new Promise((resolve) => setTimeout(resolve, fx.pauseMs));
 
 			(async () => {
 				for await (const chunk of chunks) {
